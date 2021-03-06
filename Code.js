@@ -1,31 +1,27 @@
 /**
  * list devices to get thermostat IDs
  */
-function listDevices() {  
-  // specify the endpoint
-  const endpoint = '/enterprises/' + PROJECT_ID + '/devices';
+function listDevices() { 
+  // get the device data
+  const data = makeRequest('/enterprises/' + PROJECT_ID + '/devices');
+  const deviceArray = data.devices.map(device => [
+    device.name, 
+    device.type, 
+    device.traits["sdm.devices.traits.Settings"].temperatureScale
+  ]);
 
-  // blank array to hold device data
-  let deviceArray = [];
-
-  // make request to smart api
-  const data = makeRequest(endpoint);
-  const deviceData = data.devices;
-  console.log(deviceData);
-
-  deviceData.forEach(device => {
-    const name = device.name;
-    const type = device.type;
-    deviceArray.push([name,type]);
-  });
-
-  // get the Sheet
+  // prep a new sheet or reset the existing one
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getActiveSheet();
+  var sheet = ss.getSheetByName("Devices");
+  if (sheet == null) {
+    sheet = ss.insertSheet("Devices");
+    sheet.getRange(1,1,1,4).setValues([["ID", "Type", "Temp Scale", "Location"]]);
+  } else {
+    sheet.getRange(2, 1, sheet.getMaxRows(), sheet.getMaxColumns()).clearContent();
+  }
 
   // output the data
-  sheet.getRange(2,1,deviceArray.length,2).setValues(deviceArray);
-
+  sheet.getRange(2,1,deviceArray.length,3).setValues(deviceArray);
 }
 
 /**
