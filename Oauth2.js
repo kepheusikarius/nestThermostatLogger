@@ -1,12 +1,4 @@
 /**
- * Logs the redirect URI to register.
- */
-function logRedirectUri() {
-  var service = getSmartService();
-  Logger.log(service.getRedirectUri());
-}
-
-/**
  * Create the OAuth 2 service
  */
 function getSmartService() {
@@ -50,7 +42,7 @@ function getSmartService() {
 /**
  * Direct the user to the authorization URL
  */
-function showSidebar() {
+function showAuthorizationSidebar() {
   
   const smartService = getSmartService();
   

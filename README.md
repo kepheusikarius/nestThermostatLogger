@@ -1,6 +1,6 @@
 # Nest Thermostat Logger
 
-Project to log data from Google Nest thermostats into a Google Sheet, using the Smart Device Management (SDM) API and Apps Script. It also uses the weather.gov API to add local weather data.
+Project to log data from Google Nest thermostats into a Google Sheet, using the Smart Device Management (SDM) API and Apps Script. It also uses the openweathermap.org API to add local weather data.
 
 The SDM API was launched in September 2020 ([read more](https://developers.googleblog.com/2020/09/google-nest-device-access-console.html)).
 
@@ -21,9 +21,3 @@ This project uses the [OAuth2 Apps Script library](https://github.com/googlework
 [Get Device list](https://developers.google.com/nest/device-access/reference/rest/v1/enterprises.devices/list)
 
 [Get Device data](https://developers.google.com/nest/device-access/reference/rest/v1/enterprises.devices/get)
-
-And yes, it's possible to set your thermostat temperature from your Google Sheet, at this [endpoint](https://developers.google.com/nest/device-access/traits/device/thermostat-temperature-setpoint)
-
-# More Info
-
-Tutorial coming soon on [benlcollins.com](https://www.benlcollins.com/)
