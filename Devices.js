@@ -1,7 +1,7 @@
 /**
  * list devices to get thermostat IDs
  */
-function listDevices() { 
+ function listDevices() { 
   // get the device data
   const data = makeRequest('/enterprises/' + PROJECT_ID + '/devices');
   const deviceArray = data.devices.map(device => [
@@ -12,9 +12,9 @@ function listDevices() {
 
   // prep a new sheet or reset the existing one
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName("Devices");
+  var sheet = ss.getSheetByName(DEVICE_SHEET_NAME);
   if (sheet == null) {
-    sheet = ss.insertSheet("Devices");
+    sheet = ss.insertSheet(DEVICE_SHEET_NAME);
     sheet.getRange(1,1,1,4).setValues([["ID", "Type", "Temp Scale", "Location"]]);
   } else {
     sheet.getRange(2, 1, sheet.getMaxRows(), sheet.getMaxColumns()).clearContent();
@@ -34,7 +34,6 @@ function makeRequest(endpoint) {
   
   // get the access token
   const access_token = smartService.getAccessToken();
-  console.log(access_token);
 
   // setup the SMD API url
   const url = 'https://smartdevicemanagement.googleapis.com/v1';
@@ -53,15 +52,15 @@ function makeRequest(endpoint) {
   }
   
   // try calling API
-  try {
-    const response = UrlFetchApp.fetch(url + endpoint, params);
-    const responseBody = JSON.parse(response.getContentText());
-    
-    return responseBody;
+  const response = UrlFetchApp.fetch(url + endpoint, params);
+  const statusCode = response.getResponseCode();
+  const responseBody = JSON.parse(response.getContentText());
+
+  if (statusCode != 200) {
+    throw responseBody['error']['message'];
   }
-  catch(e) {
-    console.log('Error: ' + e);
-  }
+  
+  return responseBody;
 }
 
 /**
@@ -88,69 +87,67 @@ function logThermostatDataAllDevices() {
   let dataArray = [];
   const weatherDataArray = retrieveWeather();
 
-  try {
-    const response = UrlFetchApp.fetch(url + endpoint, params);
-    if (response.getResponseCode() !== 200){
-        console.error(`${response.getResponseCode()}: ${response.getContentText()}`);
-        return;
+  const response = UrlFetchApp.fetch(url + endpoint, params);
+  if (response.getResponseCode() !== 200){
+      console.error(`${response.getResponseCode()}: ${response.getContentText()}`);
+      return;
+  }
+
+  const responseBody = JSON.parse(response.getContentText());
+  const devices = responseBody['devices'];
+  const now = new Date();
+
+  devices.forEach(device => {
+    if (device['type'] === 'sdm.devices.types.THERMOSTAT') {
+
+      const humidity = device['traits']['sdm.devices.traits.Humidity']['ambientHumidityPercent'];
+      const connectivity = device['traits']['sdm.devices.traits.Connectivity']['status'];
+      const fan = device['traits']['sdm.devices.traits.Fan']['timerMode'];
+      const mode = device['traits']['sdm.devices.traits.ThermostatMode']['mode'];
+      const thermostatEcoMode = device['traits']['sdm.devices.traits.ThermostatEco']['mode'];
+      const thermostatEcoHeatCelcius = device['traits']['sdm.devices.traits.ThermostatEco']['heatCelsius'];
+      const thermostatEcoCoolCelcius = device['traits']['sdm.devices.traits.ThermostatEco']['coolCelsius'];
+      const thermostatHvac = device['traits']['sdm.devices.traits.ThermostatHvac']['status'];
+      const tempCelcius = device['traits']['sdm.devices.traits.Temperature']['ambientTemperatureCelsius'];
+      const targetHeatCelcius = device['traits']['sdm.devices.traits.ThermostatTemperatureSetpoint']['heatCelsius'];
+      const targetCoolCelcius = device['traits']['sdm.devices.traits.ThermostatTemperatureSetpoint']['coolCelsius'];
+
+      dataArray.push(
+        [
+          now,
+          getDeviceLocation(device['name']),
+          humidity,
+          connectivity,
+          fan,
+          mode,
+          thermostatEcoMode,
+          thermostatEcoHeatCelcius,
+          thermostatEcoCoolCelcius,
+          thermostatHvac,
+          tempCelcius,
+          targetHeatCelcius,
+          targetCoolCelcius,
+        ].concat(weatherDataArray)
+      );
+      
     }
 
-    const responseBody = JSON.parse(response.getContentText());
-    
-    const devices = responseBody['devices'];
-    const now = new Date();
+  });
 
-    devices.forEach(device => {
-      if (device['type'] === 'sdm.devices.types.THERMOSTAT') {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(LOG_SHEET_NAME);
+  sheet.getRange(sheet.getLastRow()+1,1,dataArray.length,dataArray[0].length).setValues(dataArray);
+}
 
-        // get relevant info
-        const name = device['name'];
-        const humidity = device['traits']['sdm.devices.traits.Humidity']['ambientHumidityPercent'];
-        const connectivity = device['traits']['sdm.devices.traits.Connectivity']['status'];
-        const fan = device['traits']['sdm.devices.traits.Fan']['timerMode'];
-        const mode = device['traits']['sdm.devices.traits.ThermostatMode']['mode'];
-        const thermostatEcoMode = device['traits']['sdm.devices.traits.ThermostatEco']['mode'];
-        const thermostatEcoHeatCelcius = device['traits']['sdm.devices.traits.ThermostatEco']['heatCelsius'];
-        const thermostatEcoCoolCelcius = device['traits']['sdm.devices.traits.ThermostatEco']['coolCelsius'];
-        const thermostatHvac = device['traits']['sdm.devices.traits.ThermostatHvac']['status'];
-        const tempCelcius = device['traits']['sdm.devices.traits.Temperature']['ambientTemperatureCelsius'];
-        const targetHeatCelcius = device['traits']['sdm.devices.traits.ThermostatTemperatureSetpoint']['heatCelsius'];
-        const targetCoolCelcius = device['traits']['sdm.devices.traits.ThermostatTemperatureSetpoint']['coolCelsius'];
+function getDeviceLocation(deviceName) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(DEVICE_SHEET_NAME);
 
-        let location = 'Unknown';
-        const myDevice = DEVICES.find(d => name.endsWith(d.id));
-        if (myDevice) {
-          location = myDevice.location;
-        }
-
-        dataArray.push(
-          [
-            now,
-            location,
-            humidity,
-            connectivity,
-            fan,
-            mode,
-            thermostatEcoMode,
-            thermostatEcoHeatCelcius,
-            thermostatEcoCoolCelcius,
-            thermostatHvac,
-            tempCelcius,
-            targetHeatCelcius,
-            targetCoolCelcius,
-          ].concat(weatherDataArray)
-        );
-        
-      }
-
-    });
-
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const sheet = ss.getSheetByName(LOG_SHEET_NAME);
-    sheet.getRange(sheet.getLastRow()+1,1,dataArray.length,dataArray[0].length).setValues(dataArray);
-  }
-  catch(e) {
-    console.error(e);
+  const deviceNameLocation = sheet.createTextFinder(deviceName).findNext();
+  if (!deviceNameLocation) {
+    return 'Unknown';
   }
 
+  const deviceLocationLocation = sheet.getRange(deviceNameLocation.getRow(), 4);
+  return deviceLocationLocation.getValue();
 }
