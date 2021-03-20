@@ -85,3 +85,8 @@ function authCallback(request) {
     return HtmlService.createHtmlOutput('Denied. You can close this tab');
   }
 }
+
+function refreshToken() {
+  const smartService = getSmartService();
+  smartService.refresh();
+}
