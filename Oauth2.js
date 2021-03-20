@@ -8,7 +8,7 @@ function getSmartService() {
   return OAuth2.createService('smd')
 
       // Set the endpoint URLs, which are the same for all Google services.
-      .setAuthorizationBaseUrl('https://nestservices.google.com/partnerconnections/' + PROJECT_ID + '/auth')
+      .setAuthorizationBaseUrl(`https://nestservices.google.com/partnerconnections/${PROJECT_ID}/auth`)
       .setTokenUrl('https://www.googleapis.com/oauth2/v4/token')
 
       // Set the client ID and secret, from the Google Developers Console.
@@ -66,7 +66,7 @@ function showAuthorizationSidebar() {
     console.log('App has access');
     
     // make the API request
-    makeRequest();
+    getDevices();
   }
 }
 
