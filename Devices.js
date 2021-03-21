@@ -31,15 +31,9 @@
  * function to make request to google smart api
  */
 function makeRequest(endpoint) {
-
-  // get the smart service
   const smartService = getSmartService();
-  
-  // get the access token
   const access_token = smartService.getAccessToken();
-
-  // setup the SMD API url
-  const url = 'https://smartdevicemanagement.googleapis.com/v1';
+  const url = `https://smartdevicemanagement.googleapis.com/v1${endpoint}`;
 
   // setup the headers for the call
   const headers = {
@@ -55,7 +49,7 @@ function makeRequest(endpoint) {
   }
   
   // try calling API
-  const response = UrlFetchApp.fetch(url + endpoint, params);
+  const response = UrlFetchApp.fetch(url, params);
   const statusCode = response.getResponseCode();
   const responseBody = JSON.parse(response.getContentText());
 
